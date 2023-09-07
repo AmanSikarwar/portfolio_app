@@ -12,6 +12,7 @@ class AvatarWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final blurColor = Theme.of(context).scaffoldBackgroundColor;
     return Container(
       width: size.width,
       height: size.height,
@@ -24,8 +25,8 @@ class AvatarWidget extends StatelessWidget {
             end: Alignment.bottomCenter,
             colors: [
               Colors.transparent,
-              Colors.black.withOpacity(0.5),
-              Colors.black,
+              blurColor.withOpacity(0.5),
+              blurColor,
             ],
             stops: const [0.8, 0.9, 1.0],
           ),

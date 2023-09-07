@@ -34,7 +34,7 @@ class IntroWidget extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: size.height * 0.2,
+            height: size.height * 0.5,
             child: DefaultTextStyle(
               style: Theme.of(context).textTheme.displaySmall!,
               child: AnimatedTextKit(

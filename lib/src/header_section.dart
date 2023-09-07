@@ -30,8 +30,7 @@ class HeaderSectionMobile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.sizeOf(context);
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return Column(
       children: [
         AvatarWidget(size: Size(size.width, size.height * 0.48)),
         IntroWidget(size: Size(size.width, size.height * 0.36)),

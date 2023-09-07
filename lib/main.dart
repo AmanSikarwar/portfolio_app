@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:portfolio_app/src/constants.dart';
+import 'package:portfolio_app/src/footer_section.dart';
 import 'package:portfolio_app/src/header_section.dart';
+import 'package:portfolio_app/src/project_section.dart';
+import 'package:portfolio_app/src/widgets/social_icons_tray.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -35,6 +38,8 @@ class PortfolioHome extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Aman Sikarwar | Portfolio"),
         backgroundColor: Colors.transparent,
+        centerTitle: getDeviceType(MediaQuery.sizeOf(context)) ==
+            DeviceScreenType.mobile,
         actions: [
           if (getDeviceType(MediaQuery.sizeOf(context)) ==
                   DeviceScreenType.desktop ||
@@ -85,7 +90,26 @@ class PortfolioHomeBodyDesktop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const HeaderSectionDesktop();
+    return ListView(
+      children: const [
+        HeaderSectionDesktop(),
+        SizedBox(height: 16),
+        Center(
+          child: Text(
+            "Work in Progress, switch to mobile view for now.",
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        )
+        // PrijectSectionDesktop(),
+        // SizedBox(height: 16),
+        // SocialIconsTray(),
+        // SizedBox(height: 16),
+        // FooterSectionDesktop()
+      ],
+    );
   }
 }
 
@@ -94,6 +118,16 @@ class PortfolioHomeBodyMobile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const HeaderSectionMobile();
+    return ListView(
+      children: const [
+        HeaderSectionMobile(),
+        SizedBox(height: 16),
+        PrijectSectionMobile(),
+        SizedBox(height: 16),
+        SocialIconsTray(),
+        SizedBox(height: 16),
+        FooterSectionMobile()
+      ],
+    );
   }
 }
