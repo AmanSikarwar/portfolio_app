@@ -12,26 +12,32 @@ class SocialIconsTray extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.github),
             onPressed: () => launchUrl(Uri.parse(githubUrl)),
+            tooltip: 'GitHub',
           ),
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.linkedin),
             onPressed: () => launchUrl(Uri.parse(linkedinUrl)),
+            tooltip: 'LinkedIn',
           ),
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.twitter),
             onPressed: () => launchUrl(Uri.parse(twitterUrl)),
+            tooltip: 'Twitter',
           ),
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.instagram),
             onPressed: () => launchUrl(Uri.parse(instagramUrl)),
+            tooltip: 'Instagram',
           ),
           IconButton(
             icon: const FaIcon(FontAwesomeIcons.envelope),
             onPressed: () => launchUrl(Uri.parse(emailUrl)),
+            tooltip: 'Email',
           ),
         ],
       ),

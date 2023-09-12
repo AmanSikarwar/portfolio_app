@@ -1,7 +1,7 @@
 import 'package:portfolio_app/src/models/project_model.dart';
 
 const String githubUrl = 'https://github.com/AmanSikarwar';
-const String linkedinUrl = 'https://www.linkedin.com/in/amansikarwaar/';
+const String linkedinUrl = 'https://www.linkedin.com/in/amansikarwar/';
 const String twitterUrl = 'https://twitter.com/AmanSikarwaar';
 const String mediumUrl = 'https://medium.com/@amansikarwar';
 const String instagramUrl = 'https://www.instagram.com/amansikarwaar/';
