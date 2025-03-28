@@ -1,59 +1,98 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
+  <head>
+    <base href="$FLUTTER_BASE_HREF" />
 
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
+    <meta charset="UTF-8" />
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+    <meta
+      name="description"
+      content="Aman Sikarwar - Portfolio Website showcasing skills and projects"
+    />
 
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+    <!-- iOS meta tags & icons -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="Aman Sikarwar" />
+    <link rel="apple-touch-icon" href="icons/Icon-192.png" />
 
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="$FLUTTER_BASE_HREF">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png" />
 
-  <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+    <title>Aman Sikarwar - Portfolio</title>
+    <link rel="manifest" href="manifest.json" />
 
-  <!-- iOS meta tags & icons -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="portfolio_app">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+    <style>
+      /* Set background color to match home section deep navy color */
+      body {
+        background-color: #0f172a;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+      /* Loading indicator styling */
+      .loading-indicator {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: #67dbff; /* AppTheme.accentColor */
+      }
 
-  <title>portfolio_app</title>
-  <link rel="manifest" href="manifest.json">
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(103, 219, 255, 0.2); /* AppTheme.accentColor with opacity */
+        border-radius: 50%;
+        border-top-color: #67dbff; /* AppTheme.accentColor */
+        animation: spin 1s ease-in-out infinite;
+        margin-bottom: 15px;
+      }
 
-  <script>
-    // The value below is injected by flutter build, do not touch.
-    const serviceWorkerVersion = null;
-  </script>
-  <!-- This script adds the flutter initialization JS code -->
-  <script src="flutter.js" defer></script>
-</head>
-<body>
-  <script>
-    window.addEventListener('load', function(ev) {
-      // Download main.dart.js
-      _flutter.loader.loadEntrypoint({
-        serviceWorker: {
-          serviceWorkerVersion: serviceWorkerVersion,
-        },
-        onEntrypointLoaded: function(engineInitializer) {
-          engineInitializer.initializeEngine().then(function(appRunner) {
-            appRunner.runApp();
-          });
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
         }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Loading indicator while Flutter loads -->
+    <div id="loading" class="loading-indicator">
+      <div class="spinner"></div>
+      <div>Loading Aman's Portfolio</div>
+    </div>
+
+    <!-- Fixed Flutter bootstrapping -->
+    <script src="flutter.js" defer></script>
+    <script>
+      window.addEventListener("load", function () {
+        // Initialize Flutter and load the app
+        _flutter = { loader: { loadEntrypoint: function () {} } };
+
+        // Configure Flutter runtime
+        window.flutterConfiguration = {
+          canvasKitBaseUrl: "/canvaskit/",
+        };
+
+        // Load Flutter app
+        let scriptTag = document.createElement("script");
+        scriptTag.src = "main.dart.js";
+        scriptTag.type = "application/javascript";
+        document.body.appendChild(scriptTag);
+
+        // Hide loading indicator when app is loaded
+        scriptTag.addEventListener("load", function () {
+          // Give the app a moment to initialize
+          setTimeout(function () {
+            document.getElementById("loading").style.display = "none";
+          }, 500);
+        });
       });
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>
