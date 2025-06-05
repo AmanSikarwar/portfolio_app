@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:portfolio_app/core/theme/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
+import 'package:portfolio_app/core/providers/portfolio_data_provider.dart';
+import 'package:portfolio_app/widgets/contact_form.dart';
 
 class ContactSection extends StatefulWidget {
   const ContactSection({super.key});
@@ -15,41 +18,69 @@ class _ContactSectionState extends State<ContactSection>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  final List<ContactMethod> _contactMethods = [
-    ContactMethod(
-      icon: FontAwesomeIcons.envelope,
-      label: 'Email',
-      value: 'amansikarwaar@gmail.com',
-      action: () => launchUrl(Uri.parse('mailto:amansikarwaar@gmail.com')),
-      color: const Color(0xFF64FFDA),
-      actionText: 'Send Email',
-    ),
-    ContactMethod(
-      icon: FontAwesomeIcons.phone,
-      label: 'Mobile',
-      value: '+91-97199-62248',
-      action: () => launchUrl(Uri.parse('tel:+919719962248')),
-      color: const Color(0xFFFF7597),
-      actionText: 'Call Now',
-    ),
-    ContactMethod(
-      icon: FontAwesomeIcons.linkedin,
-      label: 'LinkedIn',
-      value: 'linkedin.com/in/amansikarwar',
-      action:
-          () => launchUrl(Uri.parse('https://linkedin.com/in/amansikarwar')),
-      color: const Color(0xFF0A66C2),
-      actionText: 'Connect',
-    ),
-    ContactMethod(
-      icon: FontAwesomeIcons.github,
-      label: 'GitHub',
-      value: 'github.com/amansikarwar',
-      action: () => launchUrl(Uri.parse('https://github.com/amansikarwar')),
-      color: const Color(0xFF6E5494),
-      actionText: 'Follow',
-    ),
-  ];
+
+  List<ContactMethod> _getContactMethods() {
+    final portfolioProvider = Provider.of<PortfolioDataProvider>(
+      context,
+      listen: false,
+    );
+    final personalInfo = portfolioProvider.personalInfo;
+
+    return [
+      ContactMethod(
+        icon: FontAwesomeIcons.envelope,
+        label: 'Email',
+        value: personalInfo?.email ?? 'amansikarwaar@gmail.com',
+        action: () => launchUrl(
+          Uri.parse(
+            'mailto:${personalInfo?.email ?? 'amansikarwaar@gmail.com'}',
+          ),
+        ),
+        color: const Color(0xFF64FFDA),
+        actionText: 'Send Email',
+      ),
+      ContactMethod(
+        icon: FontAwesomeIcons.phone,
+        label: 'Mobile',
+        value: personalInfo?.phone ?? '+91-97199-62248',
+        action: () => launchUrl(
+          Uri.parse(
+            'tel:${(personalInfo?.phone ?? '+919719962248').replaceAll(RegExp(r'[^\d+]'), '')}',
+          ),
+        ),
+        color: const Color(0xFFFF7597),
+        actionText: 'Call Now',
+      ),
+      ContactMethod(
+        icon: FontAwesomeIcons.linkedin,
+        label: 'LinkedIn',
+        value:
+            (personalInfo?.linkedinUrl ??
+                    'https://linkedin.com/in/amansikarwar')
+                .replaceFirst('https://', ''),
+        action: () => launchUrl(
+          Uri.parse(
+            personalInfo?.linkedinUrl ?? 'https://linkedin.com/in/amansikarwar',
+          ),
+        ),
+        color: const Color(0xFF0A66C2),
+        actionText: 'Connect',
+      ),
+      ContactMethod(
+        icon: FontAwesomeIcons.github,
+        label: 'GitHub',
+        value: (personalInfo?.githubUrl ?? 'https://github.com/amansikarwar')
+            .replaceFirst('https://', ''),
+        action: () => launchUrl(
+          Uri.parse(
+            personalInfo?.githubUrl ?? 'https://github.com/amansikarwar',
+          ),
+        ),
+        color: const Color(0xFF6E5494),
+        actionText: 'Follow',
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -109,25 +140,23 @@ class _ContactSectionState extends State<ContactSection>
                 child: Column(
                   children: [
                     ShaderMask(
-                      shaderCallback:
-                          (bounds) => LinearGradient(
-                            colors: [
-                              AppTheme.accentColor,
-                              AppTheme.tertiaryColor,
-                              AppTheme.primarySeed,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ).createShader(bounds),
+                      shaderCallback: (bounds) => LinearGradient(
+                        colors: [
+                          AppTheme.accentColor,
+                          AppTheme.tertiaryColor,
+                          AppTheme.primarySeed,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(bounds),
                       child: Text(
                         'Get In Touch',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.headlineMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
                       ),
                     ),
 
@@ -172,12 +201,11 @@ class _ContactSectionState extends State<ContactSection>
             opacity: _fadeAnimation,
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final int gridColumns =
-                    constraints.maxWidth > 1200
-                        ? 4
-                        : constraints.maxWidth > 800
-                        ? 2
-                        : 1;
+                final int gridColumns = constraints.maxWidth > 1200
+                    ? 4
+                    : constraints.maxWidth > 800
+                    ? 2
+                    : 1;
 
                 return GridView.builder(
                   shrinkWrap: true,
@@ -188,15 +216,55 @@ class _ContactSectionState extends State<ContactSection>
                     crossAxisSpacing: 24,
                     mainAxisSpacing: 24,
                   ),
-                  itemCount: _contactMethods.length,
+                  itemCount: _getContactMethods().length,
                   itemBuilder: (context, index) {
+                    final contactMethods = _getContactMethods();
                     return ContactCardAnimated(
-                      contactMethod: _contactMethods[index],
+                      contactMethod: contactMethods[index],
                       index: index,
                     );
                   },
                 );
               },
+            ),
+          ),
+
+          const SizedBox(height: 64),
+
+          // Add contact form section
+          FadeTransition(
+            opacity: _fadeAnimation,
+            child: Center(
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.mail_outline,
+                        color: AppTheme.accentColor,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Contact Form',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: AppTheme.accentColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Divider(
+                          color: AppTheme.accentColor.withAlpha(77),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  ContactForm(),
+                ],
+              ),
             ),
           ),
 
@@ -380,9 +448,8 @@ class _ContactCardAnimatedState extends State<ContactCardAnimated>
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOutQuint,
-                  transform:
-                      Matrix4.identity()
-                        ..translate(0, _isHovered || _isTapped ? -8.0 : 0.0),
+                  transform: Matrix4.identity()
+                    ..translate(0, _isHovered || _isTapped ? -8.0 : 0.0),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
                     gradient: LinearGradient(
@@ -410,12 +477,11 @@ class _ContactCardAnimatedState extends State<ContactCardAnimated>
                       ),
                     ],
                     border: Border.all(
-                      color:
-                          _isHovered || _isTapped
-                              ? widget.contactMethod.color.withAlpha(
-                                _isTapped ? 200 : 150,
-                              )
-                              : Colors.transparent,
+                      color: _isHovered || _isTapped
+                          ? widget.contactMethod.color.withAlpha(
+                              _isTapped ? 200 : 150,
+                            )
+                          : Colors.transparent,
                       width: _isTapped ? 2.5 : 2,
                     ),
                   ),
@@ -446,42 +512,38 @@ class _ContactCardAnimatedState extends State<ContactCardAnimated>
                               width: iconSize,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color:
-                                    _isHovered
-                                        ? widget.contactMethod.color.withAlpha(
-                                          40,
-                                        )
-                                        : colorScheme.surfaceContainerHighest
-                                            .withAlpha(100),
+                                color: _isHovered
+                                    ? widget.contactMethod.color.withAlpha(40)
+                                    : colorScheme.surfaceContainerHighest
+                                          .withAlpha(100),
                                 border: Border.all(
-                                  color:
-                                      _isHovered
-                                          ? widget.contactMethod.color
-                                          : widget.contactMethod.color
-                                              .withAlpha(100),
+                                  color: _isHovered
+                                      ? widget.contactMethod.color
+                                      : widget.contactMethod.color.withAlpha(
+                                          100,
+                                        ),
                                   width: 2,
                                 ),
-                                boxShadow:
-                                    _isHovered
-                                        ? [
-                                          BoxShadow(
-                                            color: widget.contactMethod.color
-                                                .withAlpha(60),
-                                            blurRadius: 12,
-                                            spreadRadius: 2,
-                                          ),
-                                        ]
-                                        : null,
+                                boxShadow: _isHovered
+                                    ? [
+                                        BoxShadow(
+                                          color: widget.contactMethod.color
+                                              .withAlpha(60),
+                                          blurRadius: 12,
+                                          spreadRadius: 2,
+                                        ),
+                                      ]
+                                    : null,
                               ),
                               child: Center(
                                 child: FaIcon(
                                   widget.contactMethod.icon,
                                   size: 32,
-                                  color:
-                                      _isHovered
-                                          ? widget.contactMethod.color
-                                          : widget.contactMethod.color
-                                              .withAlpha(200),
+                                  color: _isHovered
+                                      ? widget.contactMethod.color
+                                      : widget.contactMethod.color.withAlpha(
+                                          200,
+                                        ),
                                 ),
                               ),
                             ),
@@ -524,32 +586,29 @@ class _ContactCardAnimatedState extends State<ContactCardAnimated>
                               builder: (context, btnConstraints) {
                                 return AnimatedContainer(
                                   duration: const Duration(milliseconds: 300),
-                                  width:
-                                      _isHovered || _isTapped
-                                          ? btnConstraints.maxWidth
-                                          : 160,
+                                  width: _isHovered || _isTapped
+                                      ? btnConstraints.maxWidth
+                                      : 160,
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 12,
                                     horizontal: 20,
                                   ),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(30),
-                                    gradient:
-                                        _isHovered || _isTapped
-                                            ? LinearGradient(
-                                              colors: [
-                                                widget.contactMethod.color
-                                                    .withAlpha(200),
-                                                widget.contactMethod.color,
-                                              ],
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
-                                            )
-                                            : null,
-                                    color:
-                                        _isHovered || _isTapped
-                                            ? null
-                                            : Colors.transparent,
+                                    gradient: _isHovered || _isTapped
+                                        ? LinearGradient(
+                                            colors: [
+                                              widget.contactMethod.color
+                                                  .withAlpha(200),
+                                              widget.contactMethod.color,
+                                            ],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          )
+                                        : null,
+                                    color: _isHovered || _isTapped
+                                        ? null
+                                        : Colors.transparent,
                                     border: Border.all(
                                       color: widget.contactMethod.color,
                                       width: _isTapped ? 2.5 : 2,
@@ -565,20 +624,17 @@ class _ContactCardAnimatedState extends State<ContactCardAnimated>
                                         mainAxisSize: MainAxisSize.min,
                                         mainAxisAlignment:
                                             _isHovered || _isTapped
-                                                ? MainAxisAlignment.center
-                                                : MainAxisAlignment.start,
+                                            ? MainAxisAlignment.center
+                                            : MainAxisAlignment.start,
                                         children: [
                                           Icon(
                                             _isHovered || _isTapped
                                                 ? Icons.arrow_forward
                                                 : Icons.touch_app,
                                             size: 16,
-                                            color:
-                                                _isHovered || _isTapped
-                                                    ? Colors.white
-                                                    : widget
-                                                        .contactMethod
-                                                        .color,
+                                            color: _isHovered || _isTapped
+                                                ? Colors.white
+                                                : widget.contactMethod.color,
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
@@ -586,12 +642,9 @@ class _ContactCardAnimatedState extends State<ContactCardAnimated>
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
                                               fontSize: 14,
-                                              color:
-                                                  _isHovered || _isTapped
-                                                      ? Colors.white
-                                                      : widget
-                                                          .contactMethod
-                                                          .color,
+                                              color: _isHovered || _isTapped
+                                                  ? Colors.white
+                                                  : widget.contactMethod.color,
                                             ),
                                           ),
                                         ],

@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:portfolio_app/core/theme/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
+import 'package:portfolio_app/core/providers/portfolio_data_provider.dart';
 
 import 'package:portfolio_app/widgets/home/components/glowing_button.dart';
 import 'package:portfolio_app/widgets/home/components/glowing_text.dart';
@@ -94,15 +96,13 @@ class _HomeSectionState extends State<HomeSection>
       ),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.05),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _mainController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _mainController,
+            curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
+          ),
+        );
 
     _pulseAnimation = Tween<double>(
       begin: 1.0,
@@ -130,7 +130,7 @@ class _HomeSectionState extends State<HomeSection>
     final bool isDesktop = screenSize.width > 1024;
 
     return SizedBox(
-      height: screenSize.height - MediaQuery.of(context).size.height * 0.05,
+      height: screenSize.height - MediaQuery.sizeOf(context).height * 0.05,
       width: screenSize.width,
       child: Container(
         decoration: BoxDecoration(gradient: AppTheme.homeGradient),
@@ -157,10 +157,7 @@ class _HomeSectionState extends State<HomeSection>
                   gradient: RadialGradient(
                     center: Alignment.center,
                     radius: 1.5,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withAlpha(77),
-                    ],
+                    colors: [Colors.transparent, Colors.black.withAlpha(77)],
                   ),
                 ),
               ),
@@ -260,15 +257,9 @@ class _HomeSectionState extends State<HomeSection>
                 children: [
                   _buildWelcomeText(colorScheme),
                   const SizedBox(height: 12),
-                  _buildNameHeading(
-                    colorScheme,
-                    fontSize: 48,
-                  ),
+                  _buildNameHeading(colorScheme, fontSize: 48),
                   const SizedBox(height: 12),
-                  _buildRoleText(
-                    colorScheme,
-                    fontSize: 20,
-                  ),
+                  _buildRoleText(colorScheme, fontSize: 20),
                   const SizedBox(height: 30),
                   Row(
                     children: [
@@ -312,10 +303,7 @@ class _HomeSectionState extends State<HomeSection>
                 const SizedBox(height: 16),
                 _buildWelcomeText(colorScheme),
                 const SizedBox(height: 12),
-                _buildNameHeading(
-                  colorScheme,
-                  fontSize: 45,
-                ),
+                _buildNameHeading(colorScheme, fontSize: 45),
                 const SizedBox(height: 8),
                 AnimatedBuilder(
                   animation: _pulseAnimation,
@@ -355,38 +343,38 @@ class _HomeSectionState extends State<HomeSection>
   }
 
   Widget _buildNameHeading(ColorScheme colorScheme, {double? fontSize}) {
-    return GlowingText(
-      text: 'Aman Sikarwar',
-      textStyle: TextStyle(
-        fontSize: fontSize ?? 60,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1.2,
-        height: 1.1,
-      ),
-      glowColor: AppTheme.primarySeed.withAlpha(
-        179,
-      ),
-      textColor: Colors.white,
+    return Consumer<PortfolioDataProvider>(
+      builder: (context, portfolioProvider, child) {
+        final name = portfolioProvider.personalInfo?.name ?? 'Aman Sikarwar';
+        return GlowingText(
+          text: name,
+          textStyle: TextStyle(
+            fontSize: fontSize ?? 60,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+            height: 1.1,
+          ),
+          glowColor: AppTheme.primarySeed.withAlpha(179),
+          textColor: Colors.white,
+        );
+      },
     );
   }
 
   Widget _buildRoleText(ColorScheme colorScheme, {double? fontSize}) {
-    final List<String> roles = [
-      'Software Developer',
-      'Mobile App Developer',
-      'Python Programmer',
-      'Data Science Enthusiast',
-      'Flutter Expert',
-      'Web Developer',
-    ];
+    return Consumer<PortfolioDataProvider>(
+      builder: (context, portfolioProvider, child) {
+        final roles = portfolioProvider.getRoles();
 
-    return FadingRoles(
-      roles: roles,
-      style: TextStyle(
-        fontSize: fontSize ?? 22,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.5,
-      ),
+        return FadingRoles(
+          roles: roles,
+          style: TextStyle(
+            fontSize: fontSize ?? 22,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.5,
+          ),
+        );
+      },
     );
   }
 
@@ -401,10 +389,23 @@ class _HomeSectionState extends State<HomeSection>
   }
 
   Future<void> _downloadResume() async {
-    const String resumeUrl =
-        'https://drive.google.com/uc?export=download&id=1_zo9UeF5xL92jeO3urnEOvCZxAdnJVei';
-    if (await canLaunchUrl(Uri.parse(resumeUrl))) {
-      await launchUrl(Uri.parse(resumeUrl));
+    final portfolioProvider = Provider.of<PortfolioDataProvider>(
+      context,
+      listen: false,
+    );
+    final resumeUrl = portfolioProvider.getResumeUrl();
+
+    if (resumeUrl.isNotEmpty) {
+      if (await canLaunchUrl(Uri.parse(resumeUrl))) {
+        await launchUrl(Uri.parse(resumeUrl));
+      }
+    } else {
+      // Fallback URL
+      const String fallbackResumeUrl =
+          'https://drive.google.com/uc?export=download&id=1_zo9UeF5xL92jeO3urnEOvCZxAdnJVei';
+      if (await canLaunchUrl(Uri.parse(fallbackResumeUrl))) {
+        await launchUrl(Uri.parse(fallbackResumeUrl));
+      }
     }
   }
 
@@ -433,29 +434,47 @@ class _HomeSectionState extends State<HomeSection>
           ),
         ),
 
-        Container(
-          height: size,
-          width: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: backgroundColor,
-            border: Border.all(color: accentColor.withAlpha(77), width: 2),
-            boxShadow: [
-              BoxShadow(color: shadowColor, blurRadius: 30, spreadRadius: 5),
-            ],
-            image: const DecorationImage(
-              image: AssetImage('assets/Aman Sikarwar.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
-          child: ClipOval(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 0, sigmaY: 0),
-              child: Container(
-                color: Colors.transparent,
+        Consumer<PortfolioDataProvider>(
+          builder: (context, portfolioProvider, child) {
+            final imageUrl = portfolioProvider.getProfileImageUrl();
+            final DecorationImage image;
+
+            if (imageUrl.isNotEmpty && imageUrl.startsWith('http')) {
+              image = DecorationImage(
+                image: NetworkImage(imageUrl),
+                fit: BoxFit.cover,
+              );
+            } else {
+              image = const DecorationImage(
+                image: AssetImage('assets/Aman Sikarwar.png'),
+                fit: BoxFit.cover,
+              );
+            }
+
+            return Container(
+              height: size,
+              width: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: backgroundColor,
+                border: Border.all(color: accentColor.withAlpha(77), width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: shadowColor,
+                    blurRadius: 30,
+                    spreadRadius: 5,
+                  ),
+                ],
+                image: image,
               ),
-            ),
-          ),
+              child: ClipOval(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 0, sigmaY: 0),
+                  child: Container(color: Colors.transparent),
+                ),
+              ),
+            );
+          },
         ),
       ],
     );

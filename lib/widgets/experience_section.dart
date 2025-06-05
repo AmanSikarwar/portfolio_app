@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:portfolio_app/core/theme/app_theme.dart';
 import 'package:portfolio_app/widgets/colorful_chip.dart';
+import 'package:provider/provider.dart';
+import 'package:portfolio_app/core/providers/portfolio_data_provider.dart';
+import 'package:portfolio_app/data/models/experience.dart';
 
 class ExperienceSection extends StatefulWidget {
   const ExperienceSection({super.key});
@@ -11,39 +14,11 @@ class ExperienceSection extends StatefulWidget {
 }
 
 class _ExperienceSectionState extends State<ExperienceSection> {
-  final List<Map<String, dynamic>> experiences = [
-    {
-      'company': 'Syncubator',
-      'role': 'Software Development Intern',
-      'duration': 'August 2024 - Present',
-      'icon': Icons.biotech_outlined,
-      'color': const Color(0xFF64FFDA),
-      'skills': ['Flutter', 'Dart', 'AWS', 'Embedded Linux'],
-      'description': [
-        'Developing cross-platform mobile and console display applications for a next-generation neonatal incubator using Flutter and Dart.',
-        'Architecting cloud infrastructure with AWS (S3, EC2, Lambda, DynamoDB, API Gateway) for real-time data sync and secure storage.',
-        'Building embedded Linux applications for incubator control systems.',
-      ],
-    },
-    {
-      'company': 'Inter IIT Tech Meet, IIT Madras',
-      'role': 'Back-end Developer',
-      'duration': 'October 2023 - December 2023',
-      'icon': Icons.computer_outlined,
-      'color': const Color(0xFFFF7597),
-      'skills': ['Python', 'FastAPI', 'Langchain', 'AI'],
-      'description': [
-        'Developed backend for Trumio using FastAPI and Python.',
-        'Integrated an AI chatbot with Langchain framework.',
-        'Contributed to the team that secured a top position in the hackathon.',
-      ],
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isMobile = MediaQuery.of(context).size.width <= 600;
+    final portfolioProvider = Provider.of<PortfolioDataProvider>(context);
 
     return Container(
       padding: EdgeInsets.all(isMobile ? 16 : 32),
@@ -62,35 +37,59 @@ class _ExperienceSectionState extends State<ExperienceSection> {
             child: Text(
               'Experience',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                foreground:
-                    Paint()
-                      ..shader = LinearGradient(
-                        colors: [AppTheme.accentColor, AppTheme.primarySeed],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
+                foreground: Paint()
+                  ..shader = LinearGradient(
+                    colors: [AppTheme.accentColor, AppTheme.primarySeed],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
 
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: experiences.length,
-            itemBuilder: (context, index) {
-              final isLast = index == experiences.length - 1;
+          if (portfolioProvider.experiences.isEmpty)
+            const Center(child: Text('No experiences available'))
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: portfolioProvider.experiences.length,
+              itemBuilder: (context, index) {
+                final experience = portfolioProvider.experiences[index];
+                final isLast =
+                    index == portfolioProvider.experiences.length - 1;
 
-              return TimelineExperienceCard(
-                experience: experiences[index],
-                isLast: isLast,
-                index: index,
-              );
-            },
-          ),
+                return TimelineExperienceCard(
+                  experience: _convertExperienceToMap(experience),
+                  isLast: isLast,
+                  index: index,
+                );
+              },
+            ),
         ],
       ),
     );
+  }
+
+  Map<String, dynamic> _convertExperienceToMap(Experience experience) {
+    return {
+      'company': experience.company,
+      'role': experience.role,
+      'duration': experience.duration,
+      'icon': Icons.computer_outlined, // Default icon
+      'color': _parseColor(experience.iconColor ?? '#64FFDA'),
+      'skills': experience.skills,
+      'description': experience.responsibilities,
+    };
+  }
+
+  Color _parseColor(String colorString) {
+    try {
+      return Color(int.parse(colorString.replaceFirst('#', '0xFF')));
+    } catch (e) {
+      return const Color(0xFF64FFDA); // Default color
+    }
   }
 }
 
@@ -200,8 +199,8 @@ class _TimelineExperienceCardState extends State<TimelineExperienceCard>
                 onTap: () => HapticFeedback.selectionClick(),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  transform:
-                      Matrix4.identity()..translate(0, _isTapped ? 1.0 : 0.0),
+                  transform: Matrix4.identity()
+                    ..translate(0, _isTapped ? 1.0 : 0.0),
                   child: Card(
                     elevation: _isTapped ? 6 : 4,
                     margin: const EdgeInsets.only(bottom: 24),

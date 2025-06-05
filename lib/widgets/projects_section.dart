@@ -11,6 +11,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:portfolio_app/core/theme/app_theme.dart';
 import 'package:portfolio_app/core/utils/image_helper.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:portfolio_app/core/providers/portfolio_data_provider.dart';
+import 'package:portfolio_app/data/models/project.dart';
 
 class ProjectsSection extends StatefulWidget {
   const ProjectsSection({super.key});
@@ -24,36 +27,6 @@ class _ProjectsSectionState extends State<ProjectsSection>
   Future<List<GitHubProject>>? _projectsFuture;
   late AnimationController _animationController;
   bool _isLoaded = false;
-
-  final List<Map<String, dynamic>> featuredProjects = [
-    {
-      'title': 'Real-Time Health Data Visualization App',
-      'description':
-          'Displays patient vital signs in real-time using Flutter, Dart, MQTT, and BLE.',
-      'technologies': ['Flutter', 'Dart', 'MQTT', 'BLE'],
-      'link': 'https://github.com/amansikarwar/health-app',
-      'repoName': 'health-app',
-      'isFeatured': true,
-    },
-    {
-      'title': 'Automated Captive Portal Login',
-      'description':
-          'CLI tool to automate captive portal logins, reducing login time by 90%.',
-      'technologies': ['Rust', 'Systemd', 'Launchd'],
-      'link': 'https://github.com/amansikarwar/captive-portal-login',
-      'repoName': 'captive-portal-login',
-      'isFeatured': true,
-    },
-    {
-      'title': 'IIT Mandi Institute App',
-      'description':
-          'Mobile app for gymkhana resources and event management with Flutter and Firebase.',
-      'technologies': ['Flutter', 'Dart', 'Firebase'],
-      'link': 'https://github.com/amansikarwar/iit-mandi-app',
-      'repoName': 'iit-mandi-app',
-      'isFeatured': true,
-    },
-  ];
 
   final Map<String, String?> _featuredProjectImages = {};
 
@@ -75,22 +48,39 @@ class _ProjectsSectionState extends State<ProjectsSection>
   }
 
   Future<void> _loadFeaturedProjectImages() async {
+    final provider = Provider.of<PortfolioDataProvider>(context, listen: false);
+    final featuredProjects = provider.projects
+        .where((p) => p.isFeatured)
+        .toList();
+
     for (final project in featuredProjects) {
-      if (project.containsKey('repoName')) {
-        try {
-          final imageUrl = await _getReadmeImageUrl(project['repoName']);
+      try {
+        final repoName = _getRepoNameFromUrl(project.githubUrl);
+        if (repoName != null) {
+          final imageUrl = await _getReadmeImageUrl(repoName);
           if (imageUrl != null) {
             setState(() {
-              _featuredProjectImages[project['repoName']] = imageUrl;
+              _featuredProjectImages[project.id] = imageUrl;
             });
           }
-        } catch (e) {
-          if (kDebugMode) {
-            print('Error loading image for ${project['title']}: $e');
-          }
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error loading image for ${project.title}: $e');
         }
       }
     }
+  }
+
+  String? _getRepoNameFromUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri != null && uri.host == 'github.com') {
+      final segments = uri.pathSegments;
+      if (segments.length >= 2) {
+        return segments[1]; // Return repo name
+      }
+    }
+    return null;
   }
 
   Future<String?> _getReadmeImageUrl(String repoName) async {
@@ -219,22 +209,19 @@ class _ProjectsSectionState extends State<ProjectsSection>
 
   Widget _buildAnimatedHeader(BuildContext context) {
     return ShaderMask(
-      shaderCallback:
-          (bounds) => LinearGradient(
-            colors: [
-              AppTheme.primarySeed,
-              AppTheme.accentColor,
-              AppTheme.tertiaryColor,
-              AppTheme.primarySeed,
-            ],
-            stops: const [0.0, 0.3, 0.6, 1.0],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            tileMode: TileMode.mirror,
-            transform: GradientRotation(
-              _animationController.value * 2 * 3.14159,
-            ),
-          ).createShader(bounds),
+      shaderCallback: (bounds) => LinearGradient(
+        colors: [
+          AppTheme.primarySeed,
+          AppTheme.accentColor,
+          AppTheme.tertiaryColor,
+          AppTheme.primarySeed,
+        ],
+        stops: const [0.0, 0.3, 0.6, 1.0],
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        tileMode: TileMode.mirror,
+        transform: GradientRotation(_animationController.value * 2 * 3.14159),
+      ).createShader(bounds),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -258,133 +245,151 @@ class _ProjectsSectionState extends State<ProjectsSection>
   }
 
   Widget _buildFeaturedProjectsGrid(bool isDesktop, bool isTablet) {
-    final int gridColumns = isDesktop ? 3 : (isTablet ? 2 : 1);
+    return Consumer<PortfolioDataProvider>(
+      builder: (context, provider, child) {
+        final featuredProjects = provider.projects
+            .where((p) => p.isFeatured)
+            .toList();
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: gridColumns,
-        childAspectRatio: 1.1,
-        crossAxisSpacing: 24,
-        mainAxisSpacing: 24,
-      ),
-      itemCount: featuredProjects.length,
-      itemBuilder: (context, index) {
-        final projectData = Map<String, dynamic>.from(featuredProjects[index]);
-        if (projectData.containsKey('repoName') &&
-            _featuredProjectImages.containsKey(projectData['repoName'])) {
-          projectData['readmeImageUrl'] =
-              _featuredProjectImages[projectData['repoName']];
+        if (featuredProjects.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: Text('No featured projects available'),
+            ),
+          );
         }
 
-        return EnhancedProjectCard(project: projectData, index: index);
+        final int gridColumns = isDesktop ? 3 : (isTablet ? 2 : 1);
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: gridColumns,
+            childAspectRatio: 0.8,
+            crossAxisSpacing: 24,
+            mainAxisSpacing: 24,
+          ),
+          itemCount: featuredProjects.length,
+          itemBuilder: (context, index) {
+            final project = featuredProjects[index];
+            return EnhancedProjectCard(
+              project: project,
+              index: index,
+              readmeImageUrl: _featuredProjectImages[project.id],
+            );
+          },
+        );
       },
     );
   }
 
   Widget _buildGitHubProjectsView(bool isDesktop, bool isTablet) {
-    final int gridColumns = isDesktop ? 3 : (isTablet ? 2 : 1);
+    return Consumer<PortfolioDataProvider>(
+      builder: (context, provider, child) {
+        final int gridColumns = isDesktop ? 3 : (isTablet ? 2 : 1);
+        final featuredProjectUrls = provider.projects
+            .where((p) => p.isFeatured)
+            .map((p) => p.githubUrl)
+            .toList();
 
-    final List<String> featuredProjectUrls =
-        featuredProjects.map((project) => project['link'] as String).toList();
-
-    return FutureBuilder<List<GitHubProject>>(
-      future: _projectsFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32.0),
-              child: CircularProgressIndicator(),
-            ),
-          );
-        } else if (snapshot.hasError) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text('Error loading projects: ${snapshot.error}'),
-          );
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text('No GitHub projects found'),
-          );
-        } else {
-          final projects =
-              snapshot.data!
+        return FutureBuilder<List<GitHubProject>>(
+          future: _projectsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            } else if (snapshot.hasError) {
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text('Error loading projects: ${snapshot.error}'),
+              );
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text('No GitHub projects found'),
+              );
+            } else {
+              final projects = snapshot.data!
                   .where(
                     (project) => !featuredProjectUrls.contains(project.url),
                   )
                   .take(6)
                   .toList();
 
-          if (projects.isEmpty) {
-            return const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('All projects are featured above'),
-            );
-          }
+              if (projects.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('All projects are featured above'),
+                );
+              }
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: gridColumns,
-                  childAspectRatio: 1.1,
-                  crossAxisSpacing: 24,
-                  mainAxisSpacing: 24,
-                ),
-                itemCount: projects.length,
-                itemBuilder: (context, index) {
-                  return EnhancedGitHubCard(
-                    project: projects[index],
-                    index: index,
-                  );
-                },
-              ),
-
-              const SizedBox(height: 32),
-
-              Center(
-                child: ElevatedButton.icon(
-                  onPressed:
-                      () => launchUrl(
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: gridColumns,
+                      childAspectRatio: 0.9,
+                      crossAxisSpacing: 24,
+                      mainAxisSpacing: 24,
+                    ),
+                    itemCount: projects.length,
+                    itemBuilder: (context, index) {
+                      return EnhancedGitHubCard(
+                        project: projects[index],
+                        index: index,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  Center(
+                    child: ElevatedButton.icon(
+                      onPressed: () => launchUrl(
                         Uri.parse(
                           'https://github.com/amansikarwar?tab=repositories',
                         ),
                       ),
-                  icon: const FaIcon(FontAwesomeIcons.github, size: 16),
-                  label: const Text('View More on GitHub'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      icon: const FaIcon(FontAwesomeIcons.github, size: 16),
+                      label: const Text('View More on GitHub'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ],
-          );
-        }
+                ],
+              );
+            }
+          },
+        );
       },
     );
   }
 }
 
 class EnhancedProjectCard extends StatefulWidget {
-  final Map<String, dynamic> project;
+  final Project project;
   final int index;
+  final String? readmeImageUrl;
 
   const EnhancedProjectCard({
     super.key,
     required this.project,
     required this.index,
+    this.readmeImageUrl,
   });
 
   @override
@@ -441,48 +446,45 @@ class _EnhancedProjectCardState extends State<EnhancedProjectCard> {
                       ),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color:
-                            _isHovered || _isPressed
-                                ? AppTheme.accentColor.withAlpha(
-                                  _isPressed ? 150 : 100,
-                                )
-                                : Colors.transparent,
+                        color: _isHovered || _isPressed
+                            ? AppTheme.accentColor.withAlpha(
+                                _isPressed ? 150 : 100,
+                              )
+                            : Colors.transparent,
                         width: _isPressed ? 2.5 : 2,
                       ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (widget.project.containsKey('readmeImageUrl') &&
-                            widget.project['readmeImageUrl'] != null)
+                        if (widget.readmeImageUrl != null)
                           Container(
-                            height: 150,
+                            height: 120,
                             width: double.infinity,
                             decoration: BoxDecoration(
                               color: colorScheme.surfaceContainerHighest,
                             ),
                             child: ImageHelper.getImage(
-                              path: widget.project['readmeImageUrl'],
+                              path: widget.readmeImageUrl!,
                               fit: BoxFit.cover,
                             ),
                           )
-                        else if (widget.project.containsKey('image') &&
-                            widget.project['image'] != null)
+                        else if (widget.project.imageUrl != null)
                           Container(
-                            height: 150,
+                            height: 120,
                             width: double.infinity,
                             decoration: BoxDecoration(
                               color: colorScheme.surfaceContainerHighest,
                             ),
                             child: ImageHelper.getImage(
-                              path: widget.project['image'],
+                              path: widget.project.imageUrl!,
                               fit: BoxFit.cover,
                             ),
                           ),
 
                         Expanded(
                           child: Padding(
-                            padding: EdgeInsets.all(isMobile ? 12 : 20),
+                            padding: EdgeInsets.all(isMobile ? 10 : 16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -490,7 +492,7 @@ class _EnhancedProjectCardState extends State<EnhancedProjectCard> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        widget.project['title'],
+                                        widget.project.title,
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 18,
@@ -500,37 +502,34 @@ class _EnhancedProjectCardState extends State<EnhancedProjectCard> {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    if (widget.project['category'] != null)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 4,
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.accentColor.withAlpha(
+                                          40,
                                         ),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.accentColor.withAlpha(
-                                            40,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          widget.project['category'],
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppTheme.accentColor,
-                                          ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        widget.project.status.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppTheme.accentColor,
                                         ),
                                       ),
+                                    ),
                                   ],
                                 ),
 
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 8),
 
                                 Text(
-                                  widget.project['description'],
-                                  style: TextStyle(
+                                  widget.project.description,
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.white70,
                                     height: 1.4,
@@ -539,22 +538,21 @@ class _EnhancedProjectCardState extends State<EnhancedProjectCard> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
 
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 12),
 
                                 ConstrainedBox(
-                                  constraints: BoxConstraints(maxHeight: 50),
+                                  constraints: const BoxConstraints(
+                                    maxHeight: 40,
+                                  ),
                                   child: Wrap(
                                     spacing: 6,
                                     runSpacing: 6,
-                                    children:
-                                        (widget.project['technologies'] as List)
-                                            .take(3)
-                                            .map<Widget>(
-                                              (tech) => ColorfulChip(
-                                                label: tech.toString(),
-                                              ),
-                                            )
-                                            .toList(),
+                                    children: widget.project.technologies
+                                        .take(3)
+                                        .map<Widget>(
+                                          (tech) => ColorfulChip(label: tech),
+                                        )
+                                        .toList(),
                                   ),
                                 ),
 
@@ -563,15 +561,15 @@ class _EnhancedProjectCardState extends State<EnhancedProjectCard> {
                                 AnimatedContainer(
                                   duration: const Duration(milliseconds: 300),
                                   padding: EdgeInsets.symmetric(
-                                    horizontal:
-                                        _isHovered || _isPressed ? 16 : 12,
+                                    horizontal: _isHovered || _isPressed
+                                        ? 16
+                                        : 12,
                                     vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color:
-                                        _isHovered || _isPressed
-                                            ? AppTheme.accentColor
-                                            : Colors.transparent,
+                                    color: _isHovered || _isPressed
+                                        ? AppTheme.accentColor
+                                        : Colors.transparent,
                                     borderRadius: BorderRadius.circular(30),
                                     border: Border.all(
                                       color: AppTheme.accentColor,
@@ -580,9 +578,10 @@ class _EnhancedProjectCardState extends State<EnhancedProjectCard> {
                                   child: InkWell(
                                     onTap: () {
                                       HapticFeedback.mediumImpact();
-                                      launchUrl(
-                                        Uri.parse(widget.project['link']),
-                                      );
+                                      final url =
+                                          widget.project.liveUrl ??
+                                          widget.project.githubUrl;
+                                      launchUrl(Uri.parse(url));
                                     },
                                     splashColor: Colors.white24,
                                     highlightColor: Colors.transparent,
@@ -593,20 +592,18 @@ class _EnhancedProjectCardState extends State<EnhancedProjectCard> {
                                         Icon(
                                           Icons.open_in_new,
                                           size: 16,
-                                          color:
-                                              _isHovered || _isPressed
-                                                  ? Colors.black
-                                                  : AppTheme.accentColor,
+                                          color: _isHovered || _isPressed
+                                              ? Colors.black
+                                              : AppTheme.accentColor,
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
                                           'View Project',
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            color:
-                                                _isHovered || _isPressed
-                                                    ? Colors.black
-                                                    : AppTheme.accentColor,
+                                            color: _isHovered || _isPressed
+                                                ? Colors.black
+                                                : AppTheme.accentColor,
                                           ),
                                         ),
                                       ],
@@ -694,12 +691,11 @@ class _EnhancedGitHubCardState extends State<EnhancedGitHubCard> {
                       ),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color:
-                            _isHovered || _isPressed
-                                ? AppTheme.accentColor.withAlpha(
-                                  _isPressed ? 150 : 100,
-                                )
-                                : Colors.transparent,
+                        color: _isHovered || _isPressed
+                            ? AppTheme.accentColor.withAlpha(
+                                _isPressed ? 150 : 100,
+                              )
+                            : Colors.transparent,
                         width: _isPressed ? 2.5 : 2,
                       ),
                     ),
@@ -714,8 +710,9 @@ class _EnhancedGitHubCardState extends State<EnhancedGitHubCard> {
                           final titleHeight = 40.0;
                           final descHeight = 30.0;
                           final statsHeight = 30.0;
-                          final topicsHeight =
-                              widget.project.topics.isNotEmpty ? 32.0 : 0.0;
+                          final topicsHeight = widget.project.topics.isNotEmpty
+                              ? 32.0
+                              : 0.0;
                           final buttonHeight = 40.0;
                           final totalSpacing = 38.0;
 
@@ -731,8 +728,8 @@ class _EnhancedGitHubCardState extends State<EnhancedGitHubCard> {
 
                           final scaleFactor =
                               totalNeededHeight > constraints.maxHeight
-                                  ? constraints.maxHeight / totalNeededHeight
-                                  : 1.0;
+                              ? constraints.maxHeight / totalNeededHeight
+                              : 1.0;
 
                           return Column(
                             mainAxisSize: MainAxisSize.min,
@@ -832,14 +829,12 @@ class _EnhancedGitHubCardState extends State<EnhancedGitHubCard> {
                               if (widget.project.topics.isNotEmpty)
                                 SizedBox(
                                   height: topicsHeight * scaleFactor,
-                                  child:
-                                      widget.project.topics
-                                          .take(1)
-                                          .map(
-                                            (topic) =>
-                                                ColorfulChip(label: topic),
-                                          )
-                                          .first,
+                                  child: widget.project.topics
+                                      .take(1)
+                                      .map(
+                                        (topic) => ColorfulChip(label: topic),
+                                      )
+                                      .first,
                                 ),
 
                               Spacer(),
@@ -868,10 +863,9 @@ class _EnhancedGitHubCardState extends State<EnhancedGitHubCard> {
       width: _isHovered || _isPressed ? double.infinity : null,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color:
-            _isHovered || _isPressed
-                ? AppTheme.accentColor
-                : Colors.transparent,
+        color: _isHovered || _isPressed
+            ? AppTheme.accentColor
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(30),
         border: Border.all(
           color: AppTheme.accentColor,
@@ -887,20 +881,19 @@ class _EnhancedGitHubCardState extends State<EnhancedGitHubCard> {
         highlightColor: Colors.transparent,
         borderRadius: BorderRadius.circular(30),
         child: Row(
-          mainAxisSize:
-              _isHovered || _isPressed ? MainAxisSize.max : MainAxisSize.min,
-          mainAxisAlignment:
-              _isHovered || _isPressed
-                  ? MainAxisAlignment.center
-                  : MainAxisAlignment.start,
+          mainAxisSize: _isHovered || _isPressed
+              ? MainAxisSize.max
+              : MainAxisSize.min,
+          mainAxisAlignment: _isHovered || _isPressed
+              ? MainAxisAlignment.center
+              : MainAxisAlignment.start,
           children: [
             FaIcon(
               FontAwesomeIcons.github,
               size: 14,
-              color:
-                  _isHovered || _isPressed
-                      ? Colors.black
-                      : AppTheme.accentColor,
+              color: _isHovered || _isPressed
+                  ? Colors.black
+                  : AppTheme.accentColor,
             ),
             const SizedBox(width: 6),
             Text(
@@ -908,10 +901,9 @@ class _EnhancedGitHubCardState extends State<EnhancedGitHubCard> {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
-                color:
-                    _isHovered || _isPressed
-                        ? Colors.black
-                        : AppTheme.accentColor,
+                color: _isHovered || _isPressed
+                    ? Colors.black
+                    : AppTheme.accentColor,
               ),
             ),
           ],

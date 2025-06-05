@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:portfolio_app/widgets/colorful_chip.dart';
 import 'package:portfolio_app/core/theme/app_theme.dart';
+import 'package:provider/provider.dart';
+import 'package:portfolio_app/core/providers/portfolio_data_provider.dart';
 
 class AboutSection extends StatefulWidget {
   const AboutSection({super.key});
@@ -43,6 +45,7 @@ class _AboutSectionState extends State<AboutSection>
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width <= 600;
+    final portfolioProvider = Provider.of<PortfolioDataProvider>(context);
 
     return Container(
       padding: EdgeInsets.all(isMobile ? 16 : 32),
@@ -55,13 +58,12 @@ class _AboutSectionState extends State<AboutSection>
             child: Text(
               'About Me',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                foreground:
-                    Paint()
-                      ..shader = LinearGradient(
-                        colors: [AppTheme.accentColor, AppTheme.tertiaryColor],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
+                foreground: Paint()
+                  ..shader = LinearGradient(
+                    colors: [AppTheme.accentColor, AppTheme.tertiaryColor],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -77,9 +79,13 @@ class _AboutSectionState extends State<AboutSection>
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.white.withAlpha(30)),
               ),
-              child: const Text(
-                'I am a passionate software developer and data science student at IIT Mandi with a focus on building intuitive and innovative applications. I enjoy exploring new technologies and solving complex problems with clean, efficient code.',
-                style: TextStyle(fontSize: 16, height: 1.6, letterSpacing: 0.3),
+              child: Text(
+                portfolioProvider.getAboutText(),
+                style: const TextStyle(
+                  fontSize: 16,
+                  height: 1.6,
+                  letterSpacing: 0.3,
+                ),
               ),
             ),
           ),
@@ -334,33 +340,30 @@ class SkillsWidget extends StatelessWidget {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children:
-                skills.entries.map((entry) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          entry.key,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.tertiaryColor,
-                          ),
-                        ),
-                        SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children:
-                              entry.value
-                                  .map((skill) => ColorfulChip(label: skill))
-                                  .toList(),
-                        ),
-                        SizedBox(height: 24),
-                      ],
-                    );
-                  }).toList()
-                  ..removeLast(),
+            children: skills.entries.map((entry) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    entry.key,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.tertiaryColor,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: entry.value
+                        .map((skill) => ColorfulChip(label: skill))
+                        .toList(),
+                  ),
+                  SizedBox(height: 24),
+                ],
+              );
+            }).toList()..removeLast(),
           ),
         ),
       ],

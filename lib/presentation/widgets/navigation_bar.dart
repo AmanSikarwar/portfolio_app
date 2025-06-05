@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:portfolio_app/core/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import '../providers/scroll_provider.dart';
@@ -36,20 +37,20 @@ class _CustomNavigationBarState extends State<CustomNavigationBar> {
           ),
         ],
       ),
-      child:
-          isMobile
-              ? _buildMobileNavBar(scrollProvider)
-              : isTablet
-              ? _buildTabletNavBar(scrollProvider)
-              : _buildDesktopNavBar(scrollProvider),
+      child: isMobile
+          ? _buildMobileNavBar(scrollProvider)
+          : isTablet
+          ? _buildTabletNavBar(scrollProvider)
+          : _buildDesktopNavBar(scrollProvider),
     );
   }
 
   Widget _buildDesktopNavBar(ScrollProvider scrollProvider) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children:
-          scrollProvider.sections.entries.map((entry) {
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: scrollProvider.sections.entries.map((entry) {
             return buildNavButton(
               context,
               entry.key,
@@ -57,43 +58,63 @@ class _CustomNavigationBarState extends State<CustomNavigationBar> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             );
           }).toList(),
+        ),
+        _buildAdminButton(),
+      ],
     );
   }
 
   Widget _buildTabletNavBar(ScrollProvider scrollProvider) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children:
-          scrollProvider.sections.entries.map((entry) {
-            return buildNavButton(
-              context,
-              entry.key,
-              () => scrollProvider.scrollToSection(entry.value),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              fontSize: 14,
-            );
-          }).toList(),
-    );
-  }
-
-  Widget _buildMobileNavBar(ScrollProvider scrollProvider) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children:
-            scrollProvider.sections.entries.map((entry) {
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: scrollProvider.sections.entries.map((entry) {
               return buildNavButton(
                 context,
                 entry.key,
                 () => scrollProvider.scrollToSection(entry.value),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
-                  vertical: 5,
+                  vertical: 6,
                 ),
-                fontSize: 13,
+                fontSize: 14,
               );
             }).toList(),
-      ),
+          ),
+        ),
+        _buildAdminButton(isTablet: true),
+      ],
+    );
+  }
+
+  Widget _buildMobileNavBar(ScrollProvider scrollProvider) {
+    return Row(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: scrollProvider.sections.entries.map((entry) {
+                return buildNavButton(
+                  context,
+                  entry.key,
+                  () => scrollProvider.scrollToSection(entry.value),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
+                  fontSize: 13,
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        _buildAdminButton(isMobile: true),
+      ],
     );
   }
 
@@ -124,6 +145,56 @@ class _CustomNavigationBarState extends State<CustomNavigationBar> {
               letterSpacing: 0.3,
               fontSize: fontSize ?? 14,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdminButton({bool isTablet = false, bool isMobile = false}) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          context.go('/login');
+        },
+        splashColor: AppTheme.accentColor.withAlpha(50),
+        highlightColor: AppTheme.accentColor.withAlpha(30),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 8 : (isTablet ? 12 : 16),
+            vertical: isMobile ? 4 : (isTablet ? 6 : 8),
+          ),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: AppTheme.accentColor.withAlpha(100),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.admin_panel_settings,
+                size: isMobile ? 14 : (isTablet ? 16 : 18),
+                color: AppTheme.accentColor,
+              ),
+              if (!isMobile) ...[
+                const SizedBox(width: 4),
+                Text(
+                  'Admin',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.3,
+                    fontSize: isMobile ? 12 : (isTablet ? 13 : 14),
+                    color: AppTheme.accentColor,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),
