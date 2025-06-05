@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config/supabase_config.dart';
 
 class AuthService extends ChangeNotifier {
   static final AuthService _instance = AuthService._internal();
@@ -25,9 +26,6 @@ class AuthService extends ChangeNotifier {
   static const Duration _warningBeforeTimeout = Duration(
     minutes: 10,
   ); // Warn user 10 minutes before timeout
-  static const Duration _activityCheckInterval = Duration(
-    seconds: 30,
-  ); // Check activity every 30 seconds
 
   User? get currentUser => _supabase.auth.currentUser;
   bool get isAuthenticated => currentUser != null;
@@ -47,9 +45,9 @@ class AuthService extends ChangeNotifier {
     return timeLeft != null && timeLeft <= _warningBeforeTimeout;
   }
 
-  // Admin credentials - In production, this should be handled via Supabase RLS
-  static const String _adminEmail = 'admin@amansikarwar.com';
-  static const String _adminPassword = 'admin123'; // Change this in production
+  // Admin credentials - Now configured via environment variables
+  static String get _adminEmail => AppConfig.adminEmail;
+  static String get _adminPassword => AppConfig.adminPassword;
 
   /// Initialize auth service and listen to auth state changes
   void initialize() {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
+import '../core/config/supabase_config.dart';
 import '../presentation/widgets/session_config_widget.dart';
 import 'widgets/admin_header.dart';
 import 'widgets/personal_info_form.dart';
@@ -67,8 +68,9 @@ class _AdminDashboardState extends State<AdminDashboard>
               ),
             ],
           ),
-          // Session debug widget (positioned at bottom-right)
-          const Positioned(bottom: 0, right: 0, child: SessionConfigWidget()),
+          // Session debug widget (positioned at bottom-right) - only in debug mode
+          if (AppConfig.enableDebugMode)
+            const Positioned(bottom: 0, right: 0, child: SessionConfigWidget()),
         ],
       ),
     );

@@ -159,7 +159,7 @@ class _SessionWarningDialogState extends State<SessionWarningDialog> {
       backgroundColor: Colors.grey[900],
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppTheme.accentColor.withOpacity(0.3)),
+        side: BorderSide(color: AppTheme.accentColor.withValues(alpha: 0.3)),
       ),
       title: Row(
         children: [
@@ -183,9 +183,9 @@ class _SessionWarningDialogState extends State<SessionWarningDialog> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
+              color: Colors.orange.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,

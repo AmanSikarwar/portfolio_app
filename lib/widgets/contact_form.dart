@@ -22,7 +22,6 @@ class _ContactFormState extends State<ContactForm>
   late Animation<Offset> _slideAnimation;
 
   bool _isSubmitting = false;
-  bool _isSubmitted = false;
 
   @override
   void initState() {
@@ -71,7 +70,6 @@ class _ContactFormState extends State<ContactForm>
       );
 
       setState(() {
-        _isSubmitted = true;
         _isSubmitting = false;
       });
 

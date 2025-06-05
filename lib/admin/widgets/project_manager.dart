@@ -198,17 +198,24 @@ class _ProjectManagerState extends State<ProjectManager> {
 
     if (confirm == true) {
       try {
+        // ignore: use_build_context_synchronously
         final provider = Provider.of<PortfolioDataProvider>(
-          context,
+          context, // ignore: use_build_context_synchronously
           listen: false,
         );
-        await provider.deleteProject(project.id);
+        final messenger = ScaffoldMessenger.of(
+          context, // ignore: use_build_context_synchronously
+        );
+        await provider.deleteProject(
+          project.id,
+        ); // ignore: use_build_context_synchronously
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Project deleted successfully!'),
-              backgroundColor: AppTheme.accentColor,
+          // ignore: use_build_context_synchronously
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Project deleted successfully!'),
+              backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
             ),
           );

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/auth_service.dart';
@@ -141,7 +140,7 @@ class _LoginPageState extends State<LoginPage>
                             ],
                           ),
                           border: Border.all(
-                            color: AppTheme.accentColor.withOpacity(0.3),
+                            color: AppTheme.accentColor.withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -181,8 +180,8 @@ class _LoginPageState extends State<LoginPage>
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                AppTheme.accentColor.withOpacity(0.2),
-                AppTheme.accentColor.withOpacity(0.1),
+                AppTheme.accentColor.withValues(alpha: 0.2),
+                AppTheme.accentColor.withValues(alpha: 0.1),
               ],
             ),
           ),
@@ -209,7 +208,10 @@ class _LoginPageState extends State<LoginPage>
         const SizedBox(height: 8),
         Text(
           'Sign in to access the admin dashboard',
-          style: TextStyle(fontSize: 16, color: Colors.white.withOpacity(0.7)),
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.white.withValues(alpha: 0.7),
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -234,7 +236,7 @@ class _LoginPageState extends State<LoginPage>
               ),
               filled: true,
               fillColor: AppTheme.colorScheme.surfaceContainerHighest
-                  .withOpacity(0.3),
+                  .withValues(alpha: 0.3),
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
@@ -271,7 +273,7 @@ class _LoginPageState extends State<LoginPage>
               ),
               filled: true,
               fillColor: AppTheme.colorScheme.surfaceContainerHighest
-                  .withOpacity(0.3),
+                  .withValues(alpha: 0.3),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -286,9 +288,9 @@ class _LoginPageState extends State<LoginPage>
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.withOpacity(0.3)),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [

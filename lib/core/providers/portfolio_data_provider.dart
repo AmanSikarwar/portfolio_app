@@ -4,6 +4,8 @@ import 'package:portfolio_app/data/models/experience.dart';
 import 'package:portfolio_app/data/models/skill.dart';
 import 'package:portfolio_app/data/models/project.dart';
 import 'package:portfolio_app/data/services/supabase_service.dart';
+import 'package:portfolio_app/core/services/error_handler.dart';
+import 'package:portfolio_app/core/services/logging_service.dart';
 
 enum LoadingState { idle, loading, loaded, error }
 
@@ -57,40 +59,160 @@ class PortfolioDataProvider extends ChangeNotifier {
   // Load individual data sections
   Future<void> _loadPersonalInfo() async {
     try {
-      _personalInfo = await SupabaseService.getCachedPersonalInfo();
+      final result = await SupabaseService.getCachedPersonalInfo();
+      if (result.isSuccess) {
+        _personalInfo = result.data;
+        LoggingService.debug('Personal info loaded successfully');
+      } else {
+        LoggingService.warning(
+          'Failed to load personal info: ${result.error?.message}',
+        );
+        ErrorHandler.handleError(
+          result.error!,
+          context: 'Loading personal info',
+        );
+      }
       notifyListeners();
-    } catch (e) {
-      debugPrint('Error loading personal info: $e');
-      // Don't throw here to allow other data to load
+    } catch (e, stackTrace) {
+      LoggingService.error(
+        'Error loading personal info',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      ErrorHandler.handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'Loading personal info',
+      );
     }
   }
 
   Future<void> _loadExperiences() async {
     try {
-      _experiences = await SupabaseService.getCachedExperiences();
+      final result = await SupabaseService.getCachedExperiences();
+      if (result.isSuccess) {
+        _experiences = result.value;
+        LoggingService.debug(
+          'Experiences loaded successfully: ${_experiences.length} items',
+        );
+      } else {
+        LoggingService.warning(
+          'Failed to load experiences: ${result.error?.message}',
+        );
+        ErrorHandler.handleError(result.error!, context: 'Loading experiences');
+      }
       notifyListeners();
-    } catch (e) {
-      debugPrint('Error loading experiences: $e');
+    } catch (e, stackTrace) {
+      LoggingService.error(
+        'Error loading experiences',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      ErrorHandler.handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'Loading experiences',
+      );
     }
   }
 
   Future<void> _loadSkills() async {
     try {
-      _skills = await SupabaseService.getCachedSkills();
-      _skillsByCategory = await SupabaseService.getSkillsByCategory();
+      final skillsResult = await SupabaseService.getCachedSkills();
+      final categoryResult = await SupabaseService.getSkillsByCategory();
+
+      if (skillsResult.isSuccess) {
+        _skills = skillsResult.value;
+        LoggingService.debug(
+          'Skills loaded successfully: ${_skills.length} items',
+        );
+      } else {
+        LoggingService.warning(
+          'Failed to load skills: ${skillsResult.error?.message}',
+        );
+        ErrorHandler.handleError(
+          skillsResult.error!,
+          context: 'Loading skills',
+        );
+      }
+
+      if (categoryResult.isSuccess) {
+        _skillsByCategory = categoryResult.value;
+        LoggingService.debug(
+          'Skills by category loaded successfully: ${_skillsByCategory.length} categories',
+        );
+      } else {
+        LoggingService.warning(
+          'Failed to load skills by category: ${categoryResult.error?.message}',
+        );
+        ErrorHandler.handleError(
+          categoryResult.error!,
+          context: 'Loading skills by category',
+        );
+      }
+
       notifyListeners();
-    } catch (e) {
-      debugPrint('Error loading skills: $e');
+    } catch (e, stackTrace) {
+      LoggingService.error(
+        'Error loading skills',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      ErrorHandler.handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'Loading skills',
+      );
     }
   }
 
   Future<void> _loadProjects() async {
     try {
-      _projects = await SupabaseService.getCachedProjects();
-      _featuredProjects = await SupabaseService.getFeaturedProjects();
+      final projectsResult = await SupabaseService.getCachedProjects();
+      final featuredResult = await SupabaseService.getFeaturedProjects();
+
+      if (projectsResult.isSuccess) {
+        _projects = projectsResult.value;
+        LoggingService.debug(
+          'Projects loaded successfully: ${_projects.length} items',
+        );
+      } else {
+        LoggingService.warning(
+          'Failed to load projects: ${projectsResult.error?.message}',
+        );
+        ErrorHandler.handleError(
+          projectsResult.error!,
+          context: 'Loading projects',
+        );
+      }
+
+      if (featuredResult.isSuccess) {
+        _featuredProjects = featuredResult.value;
+        LoggingService.debug(
+          'Featured projects loaded successfully: ${_featuredProjects.length} items',
+        );
+      } else {
+        LoggingService.warning(
+          'Failed to load featured projects: ${featuredResult.error?.message}',
+        );
+        ErrorHandler.handleError(
+          featuredResult.error!,
+          context: 'Loading featured projects',
+        );
+      }
+
       notifyListeners();
-    } catch (e) {
-      debugPrint('Error loading projects: $e');
+    } catch (e, stackTrace) {
+      LoggingService.error(
+        'Error loading projects',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      ErrorHandler.handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'Loading projects',
+      );
     }
   }
 
@@ -102,39 +224,163 @@ class PortfolioDataProvider extends ChangeNotifier {
 
   Future<void> refreshPersonalInfo() async {
     try {
-      _personalInfo = await SupabaseService.getPersonalInfo();
+      final result = await SupabaseService.getPersonalInfo();
+      if (result.isSuccess) {
+        _personalInfo = result.data;
+        LoggingService.info('Personal info refreshed successfully');
+      } else {
+        LoggingService.warning(
+          'Failed to refresh personal info: ${result.error?.message}',
+        );
+        ErrorHandler.handleError(
+          result.error!,
+          context: 'Refreshing personal info',
+        );
+      }
       notifyListeners();
-    } catch (e) {
-      debugPrint('Error refreshing personal info: $e');
+    } catch (e, stackTrace) {
+      LoggingService.error(
+        'Error refreshing personal info',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      ErrorHandler.handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'Refreshing personal info',
+      );
     }
   }
 
   Future<void> refreshExperiences() async {
     try {
-      _experiences = await SupabaseService.getExperiences();
+      final result = await SupabaseService.getExperiences();
+      if (result.isSuccess) {
+        _experiences = result.value;
+        LoggingService.info(
+          'Experiences refreshed successfully: ${_experiences.length} items',
+        );
+      } else {
+        LoggingService.warning(
+          'Failed to refresh experiences: ${result.error?.message}',
+        );
+        ErrorHandler.handleError(
+          result.error!,
+          context: 'Refreshing experiences',
+        );
+      }
       notifyListeners();
-    } catch (e) {
-      debugPrint('Error refreshing experiences: $e');
+    } catch (e, stackTrace) {
+      LoggingService.error(
+        'Error refreshing experiences',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      ErrorHandler.handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'Refreshing experiences',
+      );
     }
   }
 
   Future<void> refreshSkills() async {
     try {
-      _skills = await SupabaseService.getSkills();
-      _skillsByCategory = await SupabaseService.getSkillsByCategory();
+      final skillsResult = await SupabaseService.getSkills();
+      final categoryResult = await SupabaseService.getSkillsByCategory();
+
+      if (skillsResult.isSuccess) {
+        _skills = skillsResult.value;
+        LoggingService.info(
+          'Skills refreshed successfully: ${_skills.length} items',
+        );
+      } else {
+        LoggingService.warning(
+          'Failed to refresh skills: ${skillsResult.error?.message}',
+        );
+        ErrorHandler.handleError(
+          skillsResult.error!,
+          context: 'Refreshing skills',
+        );
+      }
+
+      if (categoryResult.isSuccess) {
+        _skillsByCategory = categoryResult.value;
+        LoggingService.info(
+          'Skills by category refreshed successfully: ${_skillsByCategory.length} categories',
+        );
+      } else {
+        LoggingService.warning(
+          'Failed to refresh skills by category: ${categoryResult.error?.message}',
+        );
+        ErrorHandler.handleError(
+          categoryResult.error!,
+          context: 'Refreshing skills by category',
+        );
+      }
+
       notifyListeners();
-    } catch (e) {
-      debugPrint('Error refreshing skills: $e');
+    } catch (e, stackTrace) {
+      LoggingService.error(
+        'Error refreshing skills',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      ErrorHandler.handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'Refreshing skills',
+      );
     }
   }
 
   Future<void> refreshProjects() async {
     try {
-      _projects = await SupabaseService.getProjects();
-      _featuredProjects = await SupabaseService.getFeaturedProjects();
+      final projectsResult = await SupabaseService.getProjects();
+      final featuredResult = await SupabaseService.getFeaturedProjects();
+
+      if (projectsResult.isSuccess) {
+        _projects = projectsResult.value;
+        LoggingService.info(
+          'Projects refreshed successfully: ${_projects.length} items',
+        );
+      } else {
+        LoggingService.warning(
+          'Failed to refresh projects: ${projectsResult.error?.message}',
+        );
+        ErrorHandler.handleError(
+          projectsResult.error!,
+          context: 'Refreshing projects',
+        );
+      }
+
+      if (featuredResult.isSuccess) {
+        _featuredProjects = featuredResult.value;
+        LoggingService.info(
+          'Featured projects refreshed successfully: ${_featuredProjects.length} items',
+        );
+      } else {
+        LoggingService.warning(
+          'Failed to refresh featured projects: ${featuredResult.error?.message}',
+        );
+        ErrorHandler.handleError(
+          featuredResult.error!,
+          context: 'Refreshing featured projects',
+        );
+      }
+
       notifyListeners();
-    } catch (e) {
-      debugPrint('Error refreshing projects: $e');
+    } catch (e, stackTrace) {
+      LoggingService.error(
+        'Error refreshing projects',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      ErrorHandler.handleError(
+        e,
+        stackTrace: stackTrace,
+        context: 'Refreshing projects',
+      );
     }
   }
 

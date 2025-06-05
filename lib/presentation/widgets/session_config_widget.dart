@@ -25,9 +25,9 @@ class _SessionConfigWidgetState extends State<SessionConfigWidget> {
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey[900]?.withOpacity(0.8),
+            color: Colors.grey[900]?.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.blue.withOpacity(0.3)),
+            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

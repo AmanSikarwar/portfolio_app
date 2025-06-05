@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../config/supabase_config.dart';
+import 'logging_service.dart';
 
 class AnalyticsService {
   static const String _tableName = 'portfolio_analytics';
@@ -30,10 +31,10 @@ class AnalyticsService {
       );
 
       if (response.statusCode != 201) {
-        print('Failed to track analytics: ${response.body}');
+        LoggingService.warning('Failed to track analytics: ${response.body}');
       }
     } catch (e) {
-      print('Analytics tracking error: $e');
+      LoggingService.error('Analytics tracking error', error: e);
     }
   }
 
@@ -61,10 +62,10 @@ class AnalyticsService {
       );
 
       if (response.statusCode != 201) {
-        print('Failed to track event: ${response.body}');
+        LoggingService.warning('Failed to track event: ${response.body}');
       }
     } catch (e) {
-      print('Event tracking error: $e');
+      LoggingService.error('Event tracking error', error: e);
     }
   }
 
@@ -85,7 +86,7 @@ class AnalyticsService {
         return jsonDecode(response.body);
       }
     } catch (e) {
-      print('Analytics summary error: $e');
+      LoggingService.error('Analytics summary error', error: e);
     }
     return {};
   }

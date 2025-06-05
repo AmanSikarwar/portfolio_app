@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/portfolio_data_provider.dart';
 import '../../data/models/skill.dart';
-import '../../widgets/common/state_widgets.dart' as StateWidgets;
+import '../../widgets/common/state_widgets.dart' as state_widgets;
 
 class SkillManager extends StatefulWidget {
   const SkillManager({super.key});
@@ -21,15 +21,25 @@ class _SkillManagerState extends State<SkillManager> {
   String _selectedCategory = 'Technical';
   double _skillLevel = 5.0;
 
-  final List<String> _categories = [
-    'Technical',
-    'Programming Languages',
-    'Frameworks',
-    'Tools',
-    'Soft Skills',
-    'Design',
-    'Other',
-  ];
+  // Categories will be populated dynamically from existing skills
+  Set<String> get _availableCategories {
+    final provider = context.read<PortfolioDataProvider>();
+    final existingCategories = provider.skills.map((s) => s.category).toSet();
+
+    // Always include default categories
+    final defaultCategories = {
+      'Technical',
+      'Programming Languages',
+      'Frameworks',
+      'Tools',
+      'Soft Skills',
+      'Design',
+      'Other',
+    };
+
+    // Combine existing and default categories
+    return {...defaultCategories, ...existingCategories};
+  }
 
   @override
   void dispose() {
@@ -150,10 +160,19 @@ class _SkillManagerState extends State<SkillManager> {
     if (confirmed != true) return;
 
     try {
-      await context.read<PortfolioDataProvider>().deleteSkill(skillId);
+      final messenger = ScaffoldMessenger.of(
+        context, // ignore: use_build_context_synchronously
+      );
+      final provider =
+          context // ignore: use_build_context_synchronously
+              .read<PortfolioDataProvider>();
+      await provider.deleteSkill(
+        skillId,
+      ); // ignore: use_build_context_synchronously
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        // ignore: use_build_context_synchronously
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Skill deleted successfully!'),
             backgroundColor: Colors.green,
@@ -228,24 +247,36 @@ class _SkillManagerState extends State<SkillManager> {
                         const SizedBox(height: 16),
 
                         // Category Dropdown
-                        DropdownButtonFormField<String>(
-                          value: _selectedCategory,
-                          decoration: const InputDecoration(
-                            labelText: 'Category',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: _categories.map((category) {
-                            return DropdownMenuItem(
-                              value: category,
-                              child: Text(category),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() {
-                                _selectedCategory = value;
-                              });
+                        Consumer<PortfolioDataProvider>(
+                          builder: (context, provider, child) {
+                            final categories = _availableCategories.toList()
+                              ..sort();
+
+                            // Ensure selected category exists in available categories
+                            if (!categories.contains(_selectedCategory)) {
+                              _selectedCategory = categories.first;
                             }
+
+                            return DropdownButtonFormField<String>(
+                              value: _selectedCategory,
+                              decoration: const InputDecoration(
+                                labelText: 'Category',
+                                border: OutlineInputBorder(),
+                              ),
+                              items: categories.map((category) {
+                                return DropdownMenuItem(
+                                  value: category,
+                                  child: Text(category),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _selectedCategory = value;
+                                  });
+                                }
+                              },
+                            );
                           },
                         ),
                         const SizedBox(height: 16),
@@ -339,11 +370,11 @@ class _SkillManagerState extends State<SkillManager> {
 
                       Expanded(
                         child: provider.isLoading
-                            ? const StateWidgets.LoadingState(
+                            ? const state_widgets.LoadingState(
                                 message: 'Loading skills...',
                               )
                             : provider.skills.isEmpty
-                            ? const StateWidgets.EmptyState(
+                            ? const state_widgets.EmptyState(
                                 icon: Icons.code,
                                 title: 'No Skills',
                                 description:

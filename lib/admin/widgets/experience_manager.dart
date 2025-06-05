@@ -166,16 +166,19 @@ class _ExperienceManagerState extends State<ExperienceManager> {
 
     if (confirm == true) {
       try {
+        // ignore: use_build_context_synchronously
         final provider = Provider.of<PortfolioDataProvider>(
-          context,
+          context, // ignore: use_build_context_synchronously
           listen: false,
         );
         await provider.deleteExperience(experience.id);
 
         if (mounted) {
+          // ignore: use_build_context_synchronously
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Experience deleted successfully!'),
+              // ignore: use_build_context_synchronously
               backgroundColor: AppTheme.accentColor,
               behavior: SnackBarBehavior.floating,
             ),

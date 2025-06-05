@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:portfolio_app/core/config/supabase_config.dart';
+import 'package:portfolio_app/core/services/error_handler.dart';
+import 'package:portfolio_app/core/services/logging_service.dart';
 import 'package:portfolio_app/data/models/personal_info.dart';
 import 'package:portfolio_app/data/models/experience.dart';
 import 'package:portfolio_app/data/models/skill.dart';
@@ -18,63 +20,147 @@ class SupabaseService {
   }
 
   static Future<void> initialize() async {
-    await Supabase.initialize(
-      url: SupabaseConfig.supabaseUrl,
-      anonKey: SupabaseConfig.supabaseAnonKey,
-    );
+    try {
+      LoggingService.info('Initializing Supabase client');
+
+      await Supabase.initialize(
+        url: SupabaseConfig.supabaseUrl,
+        anonKey: SupabaseConfig.supabaseAnonKey,
+      ).timeout(AppConfig.networkTimeout);
+
+      LoggingService.info('Supabase client initialized successfully');
+    } catch (e, stackTrace) {
+      final error = NetworkException(
+        'Failed to initialize Supabase client',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+
+      LoggingService.error(
+        'Supabase initialization failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      throw error;
+    }
   }
 
   // Personal Info Methods
-  static Future<PersonalInfo?> getPersonalInfo() async {
+  static Future<Result<PersonalInfo?>> getPersonalInfo() async {
     try {
+      LoggingService.debug('Fetching personal info from database');
+
       final response = await client
           .from('personal_info')
           .select()
           .eq('is_active', true)
-          .maybeSingle();
+          .maybeSingle()
+          .timeout(AppConfig.databaseTimeout);
 
       if (response != null) {
-        return PersonalInfo.fromJson(response);
+        final personalInfo = PersonalInfo.fromJson(response);
+        LoggingService.info('Personal info fetched successfully');
+        return Result.success(personalInfo);
       }
-      return null;
-    } catch (e) {
-      throw Exception('Failed to fetch personal info: $e');
+
+      LoggingService.warning('No active personal info found');
+      return Result.success(null);
+    } catch (e, stackTrace) {
+      final error = DatabaseException(
+        'Failed to fetch personal info',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+
+      LoggingService.error(
+        'Error fetching personal info',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      return Result.failure(error);
     }
   }
 
   // Experience Methods
-  static Future<List<Experience>> getExperiences() async {
+  static Future<Result<List<Experience>>> getExperiences() async {
     try {
+      LoggingService.debug('Fetching experiences from database');
+
       final response = await client
           .from('experiences')
           .select()
           .eq('is_active', true)
-          .order('sort_order', ascending: true);
+          .order('sort_order', ascending: true)
+          .timeout(AppConfig.databaseTimeout);
 
-      return response.map((json) => Experience.fromJson(json)).toList();
-    } catch (e) {
-      throw Exception('Failed to fetch experiences: $e');
+      final experiences = response
+          .map((json) => Experience.fromJson(json))
+          .toList();
+      LoggingService.info(
+        'Fetched ${experiences.length} experiences successfully',
+      );
+      return Result.success(experiences);
+    } catch (e, stackTrace) {
+      final error = DatabaseException(
+        'Failed to fetch experiences',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+
+      LoggingService.error(
+        'Error fetching experiences',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      return Result.failure(error);
     }
   }
 
   // Skills Methods
-  static Future<List<Skill>> getSkills() async {
+  static Future<Result<List<Skill>>> getSkills() async {
     try {
+      LoggingService.debug('Fetching skills from database');
+
       final response = await client
           .from('skills')
           .select()
           .eq('is_active', true)
-          .order('sort_order', ascending: true);
+          .order('sort_order', ascending: true)
+          .timeout(AppConfig.databaseTimeout);
 
-      return response.map((json) => Skill.fromJson(json)).toList();
-    } catch (e) {
-      throw Exception('Failed to fetch skills: $e');
+      final skills = response.map((json) => Skill.fromJson(json)).toList();
+      LoggingService.info('Fetched ${skills.length} skills successfully');
+      return Result.success(skills);
+    } catch (e, stackTrace) {
+      final error = DatabaseException(
+        'Failed to fetch skills',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+
+      LoggingService.error(
+        'Error fetching skills',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      return Result.failure(error);
     }
   }
 
-  static Future<Map<String, List<Skill>>> getSkillsByCategory() async {
+  static Future<Result<Map<String, List<Skill>>>> getSkillsByCategory() async {
     try {
-      final skills = await getSkills();
+      LoggingService.debug('Fetching skills by category');
+
+      final skillsResult = await getSkills();
+      if (skillsResult.isFailure) {
+        return Result.failure(skillsResult.error!);
+      }
+
+      final skills = skillsResult.value;
       final Map<String, List<Skill>> categorizedSkills = {};
 
       for (final skill in skills) {
@@ -84,63 +170,155 @@ class SupabaseService {
         categorizedSkills[skill.category]!.add(skill);
       }
 
-      return categorizedSkills;
-    } catch (e) {
-      throw Exception('Failed to fetch categorized skills: $e');
+      LoggingService.info(
+        'Categorized ${skills.length} skills into ${categorizedSkills.length} categories',
+      );
+      return Result.success(categorizedSkills);
+    } catch (e, stackTrace) {
+      final error = DatabaseException(
+        'Failed to categorize skills',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+
+      LoggingService.error(
+        'Error categorizing skills',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      return Result.failure(error);
     }
   }
 
   // Projects Methods
-  static Future<List<Project>> getProjects() async {
+  static Future<Result<List<Project>>> getProjects() async {
     try {
+      LoggingService.debug('Fetching projects from database');
+
       final response = await client
           .from('projects')
           .select()
           .eq('is_active', true)
-          .order('sort_order', ascending: true);
+          .order('sort_order', ascending: true)
+          .timeout(AppConfig.databaseTimeout);
 
-      return response.map((json) => Project.fromJson(json)).toList();
-    } catch (e) {
-      throw Exception('Failed to fetch projects: $e');
+      final projects = response.map((json) => Project.fromJson(json)).toList();
+      LoggingService.info('Fetched ${projects.length} projects successfully');
+      return Result.success(projects);
+    } catch (e, stackTrace) {
+      final error = DatabaseException(
+        'Failed to fetch projects',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+
+      LoggingService.error(
+        'Error fetching projects',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      return Result.failure(error);
     }
   }
 
-  static Future<List<Project>> getFeaturedProjects() async {
+  static Future<Result<List<Project>>> getFeaturedProjects() async {
     try {
+      LoggingService.debug('Fetching featured projects from database');
+
       final response = await client
           .from('projects')
           .select()
           .eq('is_active', true)
           .eq('is_featured', true)
-          .order('sort_order', ascending: true);
+          .order('sort_order', ascending: true)
+          .timeout(AppConfig.databaseTimeout);
 
-      return response.map((json) => Project.fromJson(json)).toList();
-    } catch (e) {
-      throw Exception('Failed to fetch featured projects: $e');
+      final projects = response.map((json) => Project.fromJson(json)).toList();
+      LoggingService.info(
+        'Fetched ${projects.length} featured projects successfully',
+      );
+      return Result.success(projects);
+    } catch (e, stackTrace) {
+      final error = DatabaseException(
+        'Failed to fetch featured projects',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+
+      LoggingService.error(
+        'Error fetching featured projects',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      return Result.failure(error);
     }
   }
 
   // Storage Methods
-  static Future<String> getFileUrl(String bucket, String filePath) async {
+  static Future<Result<String>> getFileUrl(
+    String bucket,
+    String filePath,
+  ) async {
     try {
-      return client.storage.from(bucket).getPublicUrl(filePath);
-    } catch (e) {
-      throw Exception('Failed to get file URL: $e');
+      LoggingService.debug('Getting file URL for: $bucket/$filePath');
+
+      final url = client.storage.from(bucket).getPublicUrl(filePath);
+      LoggingService.info('File URL retrieved successfully');
+      return Result.success(url);
+    } catch (e, stackTrace) {
+      final error = DatabaseException(
+        'Failed to get file URL',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+
+      LoggingService.error(
+        'Error getting file URL',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      return Result.failure(error);
     }
   }
 
-  static Future<String> uploadFile(
+  static Future<Result<String>> uploadFile(
     String bucket,
     String filePath,
     List<int> fileBytes,
   ) async {
     try {
+      LoggingService.debug('Uploading file: $bucket/$filePath');
+
       await client.storage
           .from(bucket)
-          .uploadBinary(filePath, Uint8List.fromList(fileBytes));
-      return getFileUrl(bucket, filePath);
-    } catch (e) {
-      throw Exception('Failed to upload file: $e');
+          .uploadBinary(filePath, Uint8List.fromList(fileBytes))
+          .timeout(AppConfig.networkTimeout);
+
+      final urlResult = await getFileUrl(bucket, filePath);
+      if (urlResult.isFailure) {
+        return Result.failure(urlResult.error!);
+      }
+
+      LoggingService.info('File uploaded successfully');
+      return Result.success(urlResult.value);
+    } catch (e, stackTrace) {
+      final error = NetworkException(
+        'Failed to upload file',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+
+      LoggingService.error(
+        'Error uploading file',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      return Result.failure(error);
     }
   }
 
@@ -164,64 +342,92 @@ class SupabaseService {
     _cacheTimestamps[key] = DateTime.now();
   }
 
-  static Future<PersonalInfo?> getCachedPersonalInfo() async {
+  static Future<Result<PersonalInfo?>> getCachedPersonalInfo() async {
     const key = 'personal_info';
     final cached = _getCached<PersonalInfo>(key);
-    if (cached != null) return cached;
+    if (cached != null) return Result.success(cached);
 
     final result = await getPersonalInfo();
-    if (result != null) _setCache(key, result);
+    if (result.isSuccess && result.data != null) {
+      _setCache(key, result.data!);
+    }
     return result;
   }
 
-  static Future<List<Experience>> getCachedExperiences() async {
+  static Future<Result<List<Experience>>> getCachedExperiences() async {
     const key = 'experiences';
     final cached = _getCached<List<Experience>>(key);
-    if (cached != null) return cached;
+    if (cached != null) return Result.success(cached);
 
     final result = await getExperiences();
-    _setCache(key, result);
+    if (result.isSuccess) {
+      _setCache(key, result.value);
+    }
     return result;
   }
 
-  static Future<List<Skill>> getCachedSkills() async {
+  static Future<Result<List<Skill>>> getCachedSkills() async {
     const key = 'skills';
     final cached = _getCached<List<Skill>>(key);
-    if (cached != null) return cached;
+    if (cached != null) return Result.success(cached);
 
     final result = await getSkills();
-    _setCache(key, result);
+    if (result.isSuccess) {
+      _setCache(key, result.value);
+    }
     return result;
   }
 
-  static Future<List<Project>> getCachedProjects() async {
+  static Future<Result<List<Project>>> getCachedProjects() async {
     const key = 'projects';
     final cached = _getCached<List<Project>>(key);
-    if (cached != null) return cached;
+    if (cached != null) return Result.success(cached);
 
     final result = await getProjects();
-    _setCache(key, result);
+    if (result.isSuccess) {
+      _setCache(key, result.value);
+    }
     return result;
   }
 
   // Contact Form Methods
-  static Future<void> submitContactMessage({
+  static Future<Result<bool>> submitContactMessage({
     required String name,
     required String email,
     required String subject,
     required String message,
   }) async {
     try {
-      await client.from('contact_messages').insert({
-        'name': name,
-        'email': email,
-        'subject': subject,
-        'message': message,
-        'created_at': DateTime.now().toIso8601String(),
-        'is_read': false,
-      });
-    } catch (e) {
-      throw Exception('Failed to submit contact message: $e');
+      LoggingService.debug('Submitting contact message from: $email');
+
+      await client
+          .from('contact_messages')
+          .insert({
+            'name': name,
+            'email': email,
+            'subject': subject,
+            'message': message,
+            'created_at': DateTime.now().toIso8601String(),
+            'is_read': false,
+          })
+          .timeout(AppConfig.databaseTimeout);
+
+      LoggingService.info('Contact message submitted successfully');
+      return Result.success(true);
+    } catch (e, stackTrace) {
+      final error = DatabaseException(
+        'Failed to submit contact message',
+        originalError: e,
+        stackTrace: stackTrace,
+      );
+
+      LoggingService.error(
+        'Error submitting contact message',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      return Result.failure(error);
     }
   }
 
